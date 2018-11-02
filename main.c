@@ -5,6 +5,7 @@
 #include <wait.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <dirent.h>
 
 enum {normal, unknown, cd, cin, cout, ccout, hist};
 
@@ -76,20 +77,7 @@ void parse_comand(char text[], size_t end){
             comand.built_in = false;
 
             char* folder = strtok(NULL," ");
-            if(strcmp(folder,"..") == 0)
-                for (size_t j = strlen(path); j > 0; --j)
-                    if(path[j] != '/')
-                        path[j] = 0;
-                    else{
-                        path[j] = 0;
-                        break;
-                    }
-            else{
-                ///chequear si el directorio existe realmente en el sistema
-                strcat(path,"/");
-                strcat(path,folder);
-            }
-            break;
+            chdir(folder);
         }
         else if(strncmp(token,"history",7) == 0){
             comand.type = hist;
@@ -125,13 +113,11 @@ void parse_comand(char text[], size_t end){
         token = strtok(NULL," ");
     }
     try_save_comand();
-    comand.tokens[subcomands - 1] = path;
 }
 
 int main(int argc, char const *argv[]) {
-    path = getcwd(path,500);
-
     while(1) {
+        path = getcwd(path,500);
         write(STDOUT_FILENO,path,strlen(path));
         write(STDOUT_FILENO," $ ",3);
 

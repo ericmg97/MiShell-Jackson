@@ -59,10 +59,10 @@ RM = /home/eric/clion-2018.2.3/bin/cmake/linux/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/eric/CLionProjects/Shell
+CMAKE_SOURCE_DIR = /home/eric/GitRepos/MiShell-Jackson
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/eric/CLionProjects/Shell/cmake-build-debug
+CMAKE_BINARY_DIR = /home/eric/GitRepos/MiShell-Jackson/cmake-build-debug
 
 #=============================================================================
 # Target rules for target CMakeFiles/Shell.dir
@@ -71,7 +71,7 @@ CMAKE_BINARY_DIR = /home/eric/CLionProjects/Shell/cmake-build-debug
 CMakeFiles/Shell.dir/all:
 	$(MAKE) -f CMakeFiles/Shell.dir/build.make CMakeFiles/Shell.dir/depend
 	$(MAKE) -f CMakeFiles/Shell.dir/build.make CMakeFiles/Shell.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/eric/CLionProjects/Shell/cmake-build-debug/CMakeFiles --progress-num=1,2 "Built target Shell"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/eric/GitRepos/MiShell-Jackson/cmake-build-debug/CMakeFiles --progress-num=1,2 "Built target Shell"
 .PHONY : CMakeFiles/Shell.dir/all
 
 # Include target in all.
@@ -81,9 +81,9 @@ all: CMakeFiles/Shell.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/Shell.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/eric/CLionProjects/Shell/cmake-build-debug/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/eric/GitRepos/MiShell-Jackson/cmake-build-debug/CMakeFiles 2
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/Shell.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/eric/CLionProjects/Shell/cmake-build-debug/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/eric/GitRepos/MiShell-Jackson/cmake-build-debug/CMakeFiles 0
 .PHONY : CMakeFiles/Shell.dir/rule
 
 # Convenience name for target.
