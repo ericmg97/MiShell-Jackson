@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <dirent.h>
 
-enum {normal, unknown, cd, cin, cout, ccout, hist};
+enum {normal, unknown, hist, pip};
 
 struct Comand{
     int type;
@@ -18,115 +18,121 @@ struct Comand{
     char* text;
 };
 
+int p[2];
 char* history[50];
 int history_count = 0;
 char* path;
 struct Comand comand;
+struct Comand subcomand;
 
-void try_save_comand() {
-    if (!history_count && comand.text[0] != ' ')
-        history[history_count++] = comand.text;
-    else if (comand.text[0] != ' ' && strcmp(history[history_count - 1], comand.text) != 0)
-        history[history_count++] = comand.text;
+void try_save_comand(struct Comand* com) {
+    if (!history_count && com->text[0] != ' ')
+        history[history_count++] = com->text;
+    else if (com->text[0] != ' ' && strcmp(history[history_count - 1], com->text) != 0)
+        history[history_count++] = com->text;
 }
 
-void compile_comand(char text[], size_t end);
+void build_comand(char text[], size_t end, struct Comand* com, bool save);
 
-void init_comand(){
-    comand.in_fd = STDIN_FILENO;
-    comand.out_fd = STDOUT_FILENO;
-    comand.text = "";
-    comand.type = normal;
-    comand.built_in = true;
-    comand.tokens = calloc(20, sizeof(char*));
-    comand.text = malloc(300);
+void init_comand(struct Comand* com){
+    com->in_fd = STDIN_FILENO;
+    com->out_fd = STDOUT_FILENO;
+    com->text = "";
+    com->type = normal;
+    com->built_in = true;
+    com->tokens = calloc(20, sizeof(char*));
+    com->text = malloc(300);
 }
 
-void tokenize(char text[], size_t end){
+void tokenize(char text[], size_t end, struct Comand* com){
 
-    strncpy(comand.text,text,end - 1);
+    strncpy(com->text,text,end - 1);
 
-    char* text_clone = malloc(strlen(comand.text));
-    strcpy(text_clone,comand.text);
+    char* text_clone = malloc(strlen(com->text));
+    strcpy(text_clone,com->text);
 
     char* token = strtok(text_clone," ");
-    comand.tokens[0] = token;
+    com->tokens[0] = token;
 
     for (int i = 1; i < 20; ++i) {
         token = strtok(NULL," ");
-        comand.tokens[i] = token;
+        com->tokens[i] = token;
         if(token == NULL)
             break;
     }
 };
 
-void parse_comand(){
+void parse_comand(struct Comand* com, bool save){
     for (int i = 0; i < 20; ++i) {
-        char* token = comand.tokens[i];
+        char* token = com->tokens[i];
 
         if(token == NULL)
             break;
         else if(strncmp(token,"<",2) == 0){
-            comand.type = cin;
-
-            int file = open(comand.tokens[i + 1],O_RDONLY);
-            comand.in_fd = file;
+            com->tokens[i] = NULL;
+            int file = open(com->tokens[i + 1],O_RDONLY);
+            com->in_fd = file;
         }
         else if(strncmp(token,">>",2) == 0){
-            comand.type = ccout;
-
-            int file = open(comand.tokens[i + 1],O_APPEND);
-            comand.out_fd = file;
+            com->tokens[i] = NULL;
+            int file = open(com->tokens[i + 1],O_APPEND);
+            com->out_fd = file;
         }
         else if(strncmp(token,">",1) == 0){
-            comand.type = cout;
-            comand.tokens[i] = NULL;
-            //revisar ................................................................
-            int file = open(comand.tokens[i + 1],O_WRONLY,O_TRUNC);
-            comand.out_fd = file;
+            com->tokens[i] = NULL;
+            int file = open(com->tokens[i + 1],O_CREAT|O_TRUNC|O_WRONLY,00777);
+            com->out_fd = file;
+        }
+        else if(strncmp(token,"|",1) == 0){
+            com->tokens[i] = NULL;
+            com->type = pip;
+
+            char* subcomand_text = strchr(com->text,'|');
+            *subcomand_text = ' ';
+            build_comand(subcomand_text,strlen(subcomand_text) + 1,&subcomand,false);
+            return;
         }
         else if(strncmp(token,"cd",2) == 0){
-            comand.type = cd;
-            comand.built_in = false;
-
-            chdir(comand.tokens[i + 1]);
+            com->built_in = false;
+            chdir(com->tokens[i + 1]);
             break;
         }
         else if(strncmp(token,"history",7) == 0){
-            comand.type = hist;
-            comand.built_in = false;
+            com->built_in = false;
+            com->type = hist;
         }
         else if(strncmp(token,"!",1) == 0){
 
             char* val = strtok(token,"!");
 
             if(val == NULL){
-                compile_comand(history[history_count - 1], strlen(history[history_count - 1]) + 1);
+                build_comand(history[history_count - 1], strlen(history[history_count - 1]) + 1,com,true);
                 return;
             }
             for (int j = history_count; j > 0; --j) {
                 if(strncmp(history[j - 1],val,strlen(val)) == 0){
-                    compile_comand(history[j - 1], strlen(history[j - 1]) + 1);
+                    build_comand(history[j - 1], strlen(history[j - 1]) + 1,com,true);
                     return;
                 }
             }
             long line = strtol(val,NULL,10);
             if(line > 0 && line <= history_count) {
-                compile_comand(history[line - 1], strlen(history[line - 1]) + 1);
+                build_comand(history[line - 1], strlen(history[line - 1]) + 1,com,true);
                 return;
             }
-            comand.type = unknown;
-            comand.built_in = false;
+            com->type = unknown;
+            com->built_in = false;
             return;
         }
     }
-    try_save_comand();
+    if(save)
+        try_save_comand(com);
 }
 
-void compile_comand(char *text, size_t end) {
-    init_comand();
-    tokenize(text,end);
-    parse_comand();
+void build_comand(char *text, size_t end, struct Comand* com, bool save) {
+    init_comand(com);
+    tokenize(text,end,com);
+    parse_comand(com, save);
 }
 
 void print_prompt(){
@@ -136,26 +142,40 @@ void print_prompt(){
 }
 
 int main(int argc, char const *argv[]) {
+    pipe(p);
+
     while (1) {
         print_prompt();
 
         char text[300];
         ssize_t end = read(STDIN_FILENO, text, 300);
-        compile_comand(text,end);
-
-//        int p[2];
-//        pipe(p);
+        build_comand(text, end, &comand,true);
 
         int id = fork();
-
         if (!id) {
-            dup2(comand.in_fd, STDIN_FILENO);
-            dup2(comand.out_fd, STDOUT_FILENO);
 
-            if (comand.built_in) {
-                if (execvp(comand.tokens[0], (char *const *) comand.tokens) == -1) {
+            if(comand.type == pip)
+                dup2(p[1],STDOUT_FILENO);
+            else
+                dup2(comand.out_fd,STDOUT_FILENO);
+
+            dup2(comand.in_fd,STDIN_FILENO);
+
+            //int fd = fork();
+
+//            if(!fd){
+//                dup2(p[0],STDIN_FILENO);
+//                dup2(subcomand.out_fd,STDOUT_FILENO);
+//                if (subcomand.built_in)
+//                    if (execvp(subcomand.tokens[0], (char *const *) subcomand.tokens) == -1)
+//                        printf("Unknown comand \n");
+//            }
+//            else
+//                wait(NULL);
+
+            if (comand.built_in){
+                if (execvp(comand.tokens[0], (char *const *) comand.tokens) == -1)
                     printf("Unknown comand \n");
-                }
             }
             else if (comand.type == hist) {
                 for (int i = 0; i < 50; ++i) {
@@ -166,23 +186,17 @@ int main(int argc, char const *argv[]) {
                 }
             }
             exit(0);
-        } else {
-            int stat = 0;
+
+        }
+        else {
             wait(NULL);
 
-//            char buffer[1024];
-//            ssize_t stop;
+            if (comand.type == unknown) {
+                printf("Unknown comand \n");
+            }
+            else if(comand.type == pip){
 
-//            if (comand.type != unknown && comand.type != cd)
-//                stop = read(comand.out_fd, buffer, 1024);
-//
-//            if (comand.type == normal || comand.type == hist || comand.type == cin)
-//                write(comand.in_fd, buffer, stop);
-        }
-
-        if (comand.type == unknown) {
-            printf("Unkonwn comand \n");
+            }
         }
     }
 }
-
