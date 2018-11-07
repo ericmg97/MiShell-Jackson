@@ -27,7 +27,7 @@ struct Comand subcomand;
 
 void handler(int sgn){
     if(sgn == SIGINT){
-        kill(-2,SIGINT);
+        kill(1,SIGINT);
     }
 }
 
