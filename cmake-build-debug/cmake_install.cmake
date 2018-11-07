@@ -1,4 +1,4 @@
-# Install script for directory: /home/eric/CLionProjects/Shell
+# Install script for directory: /home/eric/GitRepos/MiShell-Jackson
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/eric/CLionProjects/Shell/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/eric/GitRepos/MiShell-Jackson/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

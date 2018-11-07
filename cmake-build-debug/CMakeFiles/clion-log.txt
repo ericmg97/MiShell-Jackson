@@ -1,11 +1,4 @@
-/home/eric/clion-2018.2.3/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/eric/CLionProjects/Shell
--- The C compiler identification is GNU 7.3.0
--- Check for working C compiler: /usr/bin/cc
--- Check for working C compiler: /usr/bin/cc -- works
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Detecting C compile features
--- Detecting C compile features - done
+/home/eric/clion-2018.2.3/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/eric/GitRepos/MiShell-Jackson
 -- Configuring done
 -- Generating done
--- Build files have been written to: /home/eric/CLionProjects/Shell/cmake-build-debug
+-- Build files have been written to: /home/eric/GitRepos/MiShell-Jackson/cmake-build-debug
