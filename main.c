@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <dirent.h>
 
-enum {normal, unknown, hist, pip};
+enum {normal, hist, pip, hist_pip};
 
 struct Comand{
     int type;
@@ -19,22 +19,20 @@ struct Comand{
 };
 
 int p[2];
-char* history[50];
+char* history[200];
 int history_count = 0;
-char* path;
 struct Comand comand;
 struct Comand subcomand;
 
 void handler(int sgn){
-    if(sgn == SIGINT){
+    if(sgn == SIGINT)
         kill(1,SIGINT);
-    }
 }
 
 void try_save_comand(struct Comand* com) {
     if (!history_count && com->text[0] != ' ')
         history[history_count++] = com->text;
-    else if (com->text[0] != ' ' && strcmp(history[history_count - 1], com->text) != 0)
+    else if(com->text[0] != ' ' && strcmp(history[history_count - 1], com->text) != 0)
         history[history_count++] = com->text;
 }
 
@@ -91,11 +89,15 @@ void parse_comand(struct Comand* com, bool save){
         }
         else if(strncmp(token,"|",1) == 0){
             com->tokens[i] = NULL;
-            com->type = pip;
-            char* subcomand_text = malloc(300);
 
+            if(com->type == hist)
+                com->type = hist_pip;
+            else
+                com->type = pip;
+
+            char* subcomand_text = malloc(300);
             strcpy(subcomand_text,strchr(com->text,'|'));
-            *subcomand_text = *(subcomand_text + 1);
+            *subcomand_text = 32;
 
             build_comand(subcomand_text,strlen(subcomand_text) + 1,&subcomand,false);
             try_save_comand(com);
@@ -151,7 +153,7 @@ void parse_comand(struct Comand* com, bool save){
             kill(0,SIGKILL);
         }
     }
-    if(save)
+    if(save && strcmp(com->text,"") != 0)
         try_save_comand(com);
 }
 
@@ -162,14 +164,19 @@ void build_comand(char *text, size_t end, struct Comand* com, bool save) {
 }
 
 void print_prompt(){
-    path = getcwd(path,500);
-    write(STDOUT_FILENO,path,strlen(path));
+    char* current_path = malloc(300);
+    getcwd(current_path,500);
+    write(STDOUT_FILENO,current_path,strlen(current_path));
     write(STDOUT_FILENO," $ ",3);
 }
 
-int main(int argc, char const *argv[]) {
+void __init__(){
     signal(SIGINT,handler);
     pipe(p);
+}
+
+int main(int argc, char const *argv[]) {
+    __init__();
 
     while (1) {
         wait(NULL);
@@ -181,9 +188,9 @@ int main(int argc, char const *argv[]) {
 
         int id = fork();
         if (!id) {
-            int fd = fork();
-            if (!fd) {
-                if (comand.type == pip)
+            id = fork();
+            if (!id) {
+                if (comand.type == pip || comand.type == hist_pip)
                     dup2(p[1], STDOUT_FILENO);
                 else
                     dup2(comand.out_fd, STDOUT_FILENO);
@@ -193,26 +200,29 @@ int main(int argc, char const *argv[]) {
                 if (comand.built_in) {
                     if (execvp(comand.tokens[0], (char *const *) comand.tokens) == -1)
                         printf("Unknown comand \n");
-                } else if (comand.type == hist) {
-                    for (int i = 0; i < 50; ++i) {
-                        if (history[i] == NULL)
+                }
+                else if (comand.type == hist || comand.type == hist_pip) {
+                    int index = 0;
+                    if(history_count > 50)
+                        index = 50*(history_count/50 - 1) + (history_count%50);
+                    for (int i = 0; i < 50; ++i, ++index) {
+                        if (history[index] == NULL)
                             break;
-                        printf("%d: ", i + 1);
-                        printf("%s \n", history[i]);
+                        printf("%d: %s \n", index + 1, history[index]);
                     }
-                    exit(0);
                 }
                 exit(0);
             }
-
-            if (comand.type == pip) {
-                fd = fork();
-                if (!fd) {
-                    dup2(p[0], STDIN_FILENO);
-                    dup2(subcomand.out_fd, STDOUT_FILENO);
-                    if (subcomand.built_in)
-                        if (execvp(subcomand.tokens[0], (char *const *) subcomand.tokens) == -1)
-                            printf("Unknown comand \n");
+            else{
+                if (comand.type == pip || comand.type == hist_pip) {
+                    id = fork();
+                    if (!id) {
+                        dup2(p[0], STDIN_FILENO);
+                        dup2(subcomand.out_fd, STDOUT_FILENO);
+                        if (subcomand.built_in)
+                            if (execvp(subcomand.tokens[0], (char *const *) subcomand.tokens) == -1)
+                                printf("Unknown comand \n");
+                    }
                 }
             }
         }
